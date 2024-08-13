@@ -1,0 +1,4 @@
+1. Figure out cause of rise/crash around 2015/16
+
+2. Fix NaN issue
+    - Final run of strategy causes a NaN final cash value sometimes, only when not bankrupt

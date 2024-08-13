@@ -11,7 +11,6 @@ class Investor:
         self.__cash = starting_cash
         self.__investment_ratio = investment_ratio
         self.__cash_tracker = []
-        self.__date_tracker = []
         self.__portfolios_short = {}
         self.__portfolios_long = {}
 
@@ -80,7 +79,7 @@ class Investor:
 
     def settle_position(self, current_date: datetime, current_stocks: pd.Series, K: int):
         """
-        Method to settle the postion from K months ago
+        Method to settle the position from K months ago
         :param current_date:
         :param current_stocks:
         :param K:
@@ -92,23 +91,31 @@ class Investor:
             portfolio_shorted = self.__portfolios_short[K_date]
 
             self.settle_short_and_long(portfolio_longed, portfolio_shorted, current_stocks)
-            self.__cash_tracker.append(self.__cash)
         except KeyError:
             print("WARNING: Date not found in portfolios")
             self.__cash_tracker.append(self.__cash)
 
-        self.__date_tracker.append(current_date.strftime("%m/%Y"))
+    def fill_cash_tracker(self, end_index):
+        """
+        Method for when bankrupt. Fills the rest of the cash tracker with final cash value
+        :param end_index: End index we want to fill to
+        """
+        size_to_fill = end_index - len(self.__cash_tracker)
+        self.__cash_tracker += [self.__cash for x in range(size_to_fill)]
 
-    def update_trackers(self, date):
+    def update_cash_tracker(self):
         self.__cash_tracker.append(self.__cash)
-        self.__date_tracker.append(str(date))
 
-    def output_state(self):
-        print(f"Current Cash : {self.__cash_tracker[-1]}")
-        print(f"Current Date : {self.__date_tracker[-1]}")
+    def get_cash_tally(self) -> Collection[float]:
+        return self.__cash_tracker
 
-    def get_cash(self):
+    def get_cash(self) -> float:
         return self.__cash
 
-    def get_plotting_data(self):
-        return self.__cash, self.__cash_tracker, self.__date_tracker
+    def get_plotting_data(self) -> Tuple[float, Collection[pd.Timestamp]]:
+        return self.__cash, self.__cash_tracker
+
+    def get_investment_ratio(self) -> float:
+        return self.__investment_ratio
+
+

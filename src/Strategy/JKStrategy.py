@@ -10,6 +10,7 @@ and holds this for K months. It also closes the position started t-K months prev
 """
 
 import pandas as pd
+import logging
 from datetime import datetime
 from typing import Tuple, Collection
 from pandas.tseries.offsets import DateOffset
@@ -61,7 +62,7 @@ class JKStrategy:
                 # TODO: Add code to convert currency here or when reading file
                 if code_to_currency:
                     if code_to_currency[ticker_code] != "USD":
-                        print("### FLAG ### Non-USD Currency")
+                        logging.error("Non-USD Currency found")
 
         # Orders stocks by returns in ascending order
         ranked_stocks = sorted(stocks)

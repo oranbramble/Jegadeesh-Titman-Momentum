@@ -1,54 +1,88 @@
 import pandas as pd
+import numpy as np
 import json
 import matplotlib.pyplot as plt
 import logging
 from concurrent.futures import ProcessPoolExecutor
 from typing import Tuple, Collection
-import matplotlib.dates as mdates
 
 from strategy_controller import StrategyController
 from grid import Grid
 
-def run(strategy_obj, params=None):
-    strategy_obj.run(params)
+
+def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=None):
+    strategy_obj.run(df, code_to_currency)
     return strategy_obj
 
 
 class Main:
     def __init__(self, data_filepath="../Data/stock_data.csv", currency_filepath="../Data/code_to_currency.json"):
+        """
+        Constructor
+        :param data_filepath:
+        :param currency_filepath:
+        """
         try:
             with open(currency_filepath, "r") as f:
-                self.code_to_currency = json.load(f)
+                self.__code_to_currency = json.load(f)
         except FileNotFoundError:
             logging.warning("No stock ticker currency file found, proceeding without")
-            self.code_to_currency = {}
+            self.__code_to_currency = {}
         try:
-            self.df = pd.read_csv(data_filepath)
-            self.df['Date'] = pd.to_datetime(self.df['Date'], format="%Y-%m-%d")
+            self.__df = pd.read_csv(data_filepath)
+            self.__df['Date'] = pd.to_datetime(self.__df['Date'], format="%Y-%m-%d")
+            self.__dates = self.__df['Date']
         except FileNotFoundError:
             raise FileNotFoundError("No historical data file found")
 
-    @staticmethod
-    def plot_result(strategy_controllers: Collection[StrategyController]):
-        for s in strategy_controllers:
-            s.plot(plt)
+    def plot_result(self, strategy_controllers: Collection[StrategyController]):
+        """
+        Plots the results on matplotlib graphs
+        :param strategy_controllers: List of all strategy controllers from all runs
+        """
 
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=1))  # Set interval as needed
+        # Split into two graphs
+        fig, axes = plt.subplots(nrows=1, ncols=2)
+        # Saves all the cash tallies so they can be averaged
+        cash_tallies = []
+        for s in strategy_controllers:
+            # Plots the cash tally and date tally for each run
+            s.plot(self.__dates, axes[0])
+            # Saves the cash tally for averaging
+            cash_tallies.append(s.get_cash_tally())
+
+        average_cash_tally = np.average(np.array(cash_tallies), axis=0)
+        axes[1].plot(self.__dates, average_cash_tally)
         plt.xticks(rotation=90)
         plt.legend()
         plt.show()
 
+
     @staticmethod
     def output_results(strategy_controllers: Collection[StrategyController]):
+        """
+        Output statistical results to command line
+        :param strategy_controllers:
+        :return:
+        """
         number_of_bankrupt = 0
+        average_cash = 0
         for s in strategy_controllers:
             number_of_bankrupt += 1 if s.get_bankrupt() else 0
+            average_cash += s.get_cash()
+        average_cash /= len(strategy_controllers)
         bankrupt_percentage = (number_of_bankrupt / len(strategy_controllers)) * 100
         print(f"Percentage of bankrupt runs: {bankrupt_percentage:.2f}%")
+        print(f"Average Final Cash {average_cash:.2f}")
 
 
     def run_grid_parameters(self, iterations, cash=100000):
+        """
+        Run the strategy using random grid search on parameters
+        :param iterations: Number of iterations
+        :param cash: Starting cash amount
+        """
+        # Sets grid of parameters
         grid = Grid({
             "J": [x for x in range(1, 13)],
             "K": [x for x in range(1, 13)],
@@ -60,6 +94,7 @@ class Main:
         with ProcessPoolExecutor() as executor:
             for x in range(iterations):
 
+                # Gets parameters from grid
                 J = grid.get_J()
                 K = grid.get_K()
                 ratio = grid.get_ratio()
@@ -69,20 +104,23 @@ class Main:
                 print(f"K: {K}")
                 print(f"Investment ratio: {ratio}")
 
-                strategy_controller = StrategyController(J, K, self.df, ratio, self.code_to_currency, cash)
-                futures.append(executor.submit(run, strategy_controller))
+                # Runs the grid strategy using multiprocessing to improve efficiency
+                strategy_controller = StrategyController(J, K, ratio, cash)
+                futures.append(executor.submit(run, strategy_controller, self.__df, self.__code_to_currency))
 
+        # Waits for each branch to execute before continuing
         for future in futures:
             strategy_controllers.append(future.result())
 
+        # Output statistical results to command line
         Main.output_results(strategy_controllers)
-
-        Main.plot_result(strategy_controllers)
+        # Plots cash over time and average cash from all runs
+        self.plot_result(strategy_controllers)
 
 
 if __name__ == '__main__':
     m = Main()
-    m.run_grid_parameters(iterations=10, cash=1000)
+    m.run_grid_parameters(iterations=100, cash=100000)
 
 
 
