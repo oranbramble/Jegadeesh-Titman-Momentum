@@ -43,20 +43,33 @@ class Main:
 
         # Split into two graphs
         fig, axes = plt.subplots(nrows=1, ncols=2)
+        cash_tallies = self.plot_per_run_graph(strategy_controllers, axes[0])
+        self.plot_average_graph(cash_tallies, axes[1])
+        plt.show()
+
+    def plot_per_run_graph(self, strategy_controllers: Collection[StrategyController], axes: plt.axes) \
+            -> Collection[Collection[float]]:
         # Saves all the cash tallies so they can be averaged
         cash_tallies = []
         for s in strategy_controllers:
             # Plots the cash tally and date tally for each run
-            s.plot(self.__dates, axes[0])
+            s.plot(self.__dates, axes)
             # Saves the cash tally for averaging
             cash_tallies.append(s.get_cash_tally())
 
-        average_cash_tally = np.average(np.array(cash_tallies), axis=0)
-        axes[1].plot(self.__dates, average_cash_tally)
-        plt.xticks(rotation=90)
-        plt.legend()
-        plt.show()
+        axes.legend()
+        axes.set_title("Cash per run over time")
+        axes.set_xlabel("Date")
+        axes.set_ylabel("Cash")
 
+        return cash_tallies
+
+    def plot_average_graph(self, cash_tallies: Collection[Collection[float]], axes: plt.axes):
+        average_cash_tally = np.average(np.array(cash_tallies), axis=0)
+        axes.plot(self.__dates, average_cash_tally)
+        axes.set_title("Average cash over time")
+        axes.set_xlabel("Date")
+        axes.set_ylabel("Cash")
 
     @staticmethod
     def output_results(strategy_controllers: Collection[StrategyController]):
@@ -120,7 +133,7 @@ class Main:
 
 if __name__ == '__main__':
     m = Main()
-    m.run_grid_parameters(iterations=100, cash=100000)
+    m.run_grid_parameters(iterations=1, cash=100000)
 
 
 
