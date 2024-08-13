@@ -11,6 +11,13 @@ from grid import Grid
 
 
 def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=None):
+    """
+    Method to run strategy, needed for multiprocessing
+    :param strategy_obj: Strategy object to run
+    :param df: DataFrame containing stock data
+    :param code_to_currency: Dictionary mapping from ticker code to currency (not necessary)
+    :return:
+    """
     strategy_obj.run(df, code_to_currency)
     return strategy_obj
 
@@ -49,6 +56,12 @@ class Main:
 
     def plot_per_run_graph(self, strategy_controllers: Collection[StrategyController], axes: plt.axes) \
             -> Collection[Collection[float]]:
+        """
+        Plots lines for each run's cash tally by time on the same graph
+        :param strategy_controllers: Strategy Controllers used for runs
+        :param axes: Axes to plot on
+        :return: cash_tallies: list of lists, containing every cash tally from all runs
+        """
         # Saves all the cash tallies so they can be averaged
         cash_tallies = []
         for s in strategy_controllers:
@@ -65,6 +78,11 @@ class Main:
         return cash_tallies
 
     def plot_average_graph(self, cash_tallies: Collection[Collection[float]], axes: plt.axes):
+        """
+        Plots average cash tally from all runs by time
+        :param cash_tallies: List of lists containing each run's cash tally
+        :param axes: Axes to plot graph on
+        """
         average_cash_tally = np.average(np.array(cash_tallies), axis=0)
         axes.plot(self.__dates, average_cash_tally)
         axes.set_title("Average cash over time")
