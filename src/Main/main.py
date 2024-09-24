@@ -4,7 +4,7 @@ import json
 import matplotlib.pyplot as plt
 import logging
 from concurrent.futures import ProcessPoolExecutor
-from typing import Tuple, Collection
+from typing import Collection
 
 from strategy_controller import StrategyController
 from grid import Grid
@@ -13,8 +13,10 @@ from grid import Grid
 def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=None):
     """
     Method to run strategy, needed for multiprocessing
-    :param strategy_obj: Strategy object to run
-    :param df: DataFrame containing stock data
+
+        Parameters:
+            strategy_obj: Strategy object to run
+            df: DataFrame containing stock data
     :param code_to_currency: Dictionary mapping from ticker code to currency (not necessary)
     :return:
     """
@@ -23,12 +25,15 @@ def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=Non
 
 
 class Main:
+    """
+    Main class that handles running grid search on parameters and threading the backtest
+
+    Parameters:
+        - data_filepath:
+        - currency_filepath:
+    """
     def __init__(self, data_filepath="../Data/stock_data.csv", currency_filepath="../Data/code_to_currency.json"):
-        """
-        Constructor
-        :param data_filepath:
-        :param currency_filepath:
-        """
+
         try:
             with open(currency_filepath, "r") as f:
                 self.__code_to_currency = json.load(f)
@@ -151,7 +156,7 @@ class Main:
 
 if __name__ == '__main__':
     m = Main()
-    m.run_grid_parameters(iterations=1, cash=100000)
+    m.run_grid_parameters(iterations=5, cash=1000)
 
 
 

@@ -1,8 +1,22 @@
+from typing import Collection
 from datetime import datetime
 
-class Portfolio:
+from Strategy.Stock import Stock
 
-    def __init__(self, stocks, date):
+
+class Portfolio:
+    """
+    Portfolio class to hold Stock objects and a date of when it is formed
+
+    A new Portfolio is created when stocks are longed/shorted at the start of each month. They are then settled
+    after K months.
+
+    Parameters:
+        - stocks (list[Stock]): List of Stock objects forming the Portfolio
+        - date (datetime): Date when Portfolio is created
+    """
+
+    def __init__(self, stocks: Collection[Stock], date: datetime):
         self.__stocks = stocks
         self.__date_created = date
 

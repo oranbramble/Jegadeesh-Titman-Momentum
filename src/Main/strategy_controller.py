@@ -1,15 +1,16 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from datetime import datetime
 from typing import Collection
+
 from Strategy.JKStrategy import JKStrategy
 from Strategy.Investor import Investor
-from datetime import datetime
+
 
 class StrategyController:
 
     def __init__(self, J: int, K: int, ratio: float, code_to_currency=None, cash=100000):
-        self.__strategy = JKStrategy(J=J, K=K)
+        self.__strategy = JKStrategy(J=J)
         self.__investor = Investor(starting_cash=cash, investment_ratio=ratio)
         self.__J = J
         self.__K = K
@@ -22,6 +23,17 @@ class StrategyController:
         return ax
 
     def run_month(self, df: pd.DataFrame,  i: int,  t: datetime, row: pd.Series, code_to_currency=None):
+        """
+        Runs the strategy for one month
+
+        Params:
+        :param df:
+        :param i:
+        :param t:
+        :param row:
+        :param code_to_currency:
+        :return:
+        """
         ranked_stocks = self.__strategy.rank_stocks(df, t, row, code_to_currency)
         if ranked_stocks:
             winners, losers = self.__strategy.get_winners_and_losers(ranked_stocks)

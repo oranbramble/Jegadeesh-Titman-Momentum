@@ -1,30 +1,31 @@
-"""
-Class to implement the J-month/K-month strategy, as described in Jegadeesh and Titman, 1993. The logic of this is
-summarized below.
-
-    The strategy is focussed on selecting stocks based on their returns over the past J months, and holds them for K months
-before selling. At the beginning of a month, t, all stocks are ranked in ascending order of returns over the last J
-months, and split into 10 equal groups (deciles). A portfolio is then formed of each decile, with the top labelled as
-'losers', and bottom labelled as 'winners'. In each month, t, the strategy longs the 'winners' and shorts the 'losers',
-and holds this for K months. It also closes the position started t-K months previously.
-"""
-
 import pandas as pd
 import logging
 from datetime import datetime
 from typing import Tuple, Collection
 from pandas.tseries.offsets import DateOffset
+
 from Strategy.Stock import Stock
 
 
-
 class JKStrategy:
+    """
+    Class to implement the J-month/K-month strategy, as described in Jegadeesh and Titman, 1993. The logic of this is
+    summarized below.
 
-    def __init__(self, J : int, K : int):
+    The strategy is focussed on selecting stocks based on their returns over the past J months, and holds them for
+    K months before settling the position. At the beginning of a month, t, all stocks are ranked in ascending order of
+    returns over the last J months, and split into 10 equal groups (deciles). A portfolio is then formed of each decile,
+    with the top labelled as 'losers', and bottom labelled as 'winners'. In each month, t, the strategy longs the
+    'winners' and  shorts the 'losers', and holds this for K months. It also closes the position started t-K months
+    previously.
+
+    Parameters:
+        - J (int): J months (look-back period)
+    """
+
+    def __init__(self, J: int):
         # Look-back period
         self.__J = J
-        # Holding period
-        self.__K = K
 
     def rank_stocks(self, df: pd.DataFrame, t: datetime, current_month: pd.Series, code_to_currency=None) -> list:
         """
@@ -46,13 +47,14 @@ class JKStrategy:
         for col in df.columns:
             if not col == 'Date' and 'Returns' in col:
                 # Gets the data required for the stock,
-                ticker_code, average_J_returns, price = self.get_stock_data(col, split_df, current_month)
+                ticker_code, average_J_returns, price = JKStrategy.get_stock_data(col, split_df, current_month)
 
                 # If the there is a current price of the stock and average returns
                 if not pd.isnull(price) and not pd.isnull(average_J_returns):
                     # Creates new Stock object containing data
-                    stock = Stock(ticker_code, average_J_returns, price)
-                    stocks.append(stock)
+                    stock = JKStrategy.create_stock(ticker_code, average_J_returns, price)
+                    if stock:
+                        stocks.append(stock)
                 """
                 else:
                     print("### FLAG ### NaN found")
@@ -68,7 +70,8 @@ class JKStrategy:
         ranked_stocks = sorted(stocks)
         return ranked_stocks
 
-    def get_stock_data(self, returns_col: str, last_J_months_df: pd.DataFrame, current_month: pd.Series) -> \
+    @staticmethod
+    def get_stock_data(returns_col: str, last_J_months_df: pd.DataFrame, current_month: pd.Series) -> \
             Tuple[str, float | str | None, float | str]:
         """
         Gets required data about stock to create stock object
@@ -88,19 +91,47 @@ class JKStrategy:
             average_J_returns = last_J_months_df[returns_col].mean()
         return ticker_code, average_J_returns, adj_close
 
+    @staticmethod
+    def create_stock(ticker_code: str, average_J_returns: float, price: float) -> Stock | None:
+        """
+        Creates and returns a Stock object using arguments
 
-    def create_stock(self, ticker_code: str, average_J_returns: float, price: float) -> Stock:
-        return Stock(ticker_code, average_J_returns, price)
+        Parameters:
+            - ticker_code (str): Stock ticker code
+            - average_J_returns (float): Stock returns over the last J months
+            - price (float): Current price of the stock
 
+        Returns:
+             - Stock | None: Returns Stock object created, or 'None' if any parameter was missing or invalid
+        """
+        if ticker_code is not None and average_J_returns is not None and price is not None:
+            if isinstance(ticker_code, str) and isinstance(average_J_returns, float) and isinstance(price, float):
+                if price >= 0.0:
+                    return Stock(ticker_code, average_J_returns, price)
+                else:
+                    logging.error("Price of stock less than 0")
+            else:
+                logging.error("Incorrect type when creating Stock")
+        else:
+            arg_names = ['ticker_code', 'average_J_returns', 'price']
+            logging.error(f"Missing argument(s) when creating Stock: "
+                          f"{[arg_names[i] for i,arg in enumerate([ticker_code, average_J_returns, price]) if not arg]}")
+        return
 
-    def get_winners_and_losers(self, ranked_stocks: Collection[Stock]) -> Tuple[Collection[Stock], Collection[Stock]]:
+    @staticmethod
+    def get_winners_and_losers(ranked_stocks: list[Stock]) -> Tuple[list[Stock], list[Stock]]:
         """
         Gets the worst performing decile ('losers') and best performing decile ('winners')
-        :param deciles: Stocks and their average J months of returns ordered ascendingly by their j returns
+        :param ranked_stocks: Stocks and their average J months of returns in ascending order by their J returns
         :return: 'winners' decile (top 10% performers), and 'losers' decile (bottom 10% decile)
         """
-        decile_size = len(ranked_stocks) // 10
-        winners = ranked_stocks[:decile_size]
-        losers = ranked_stocks[-decile_size:]
-        return winners, losers
+        if ranked_stocks:
+            if len(ranked_stocks) < 10:
+                return [ranked_stocks[-1]], [ranked_stocks[0]]
+
+            decile_size = len(ranked_stocks) // 10
+            losers = ranked_stocks[:decile_size]
+            winners = ranked_stocks[-decile_size:]
+            return winners, losers
+        return [], []
 

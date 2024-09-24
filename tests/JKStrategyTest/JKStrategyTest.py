@@ -22,7 +22,7 @@ class JKStrategyTest(TestCase):
 
     def test_get_stock_data(self):
         returns_column = "AReturns"
-        s = JKStrategy(J=1, K=1)
+        s = JKStrategy(J=1)
         
         # Test 1: Testing with NaN values in first and last row
         for i, row in self.df.iterrows():
@@ -64,23 +64,22 @@ class JKStrategyTest(TestCase):
         Testing the rank_stocks method of JKStrategy using a J parameter of 1
         """
         J = 1
-        # K parameter is unused for this method, so can be any value
-        K = -1
-        s = JKStrategy(J=J, K=K)
+        s = JKStrategy(J=J)
 
         for i, row in self.df.iterrows():
             t = row['Date']
             ranked_stocks = s.rank_stocks(self.df, t, row, self.code_to_currency)
+            ranked_stocks = [str(s) for s in ranked_stocks]
             if i < J + 1:
                 # While i less than J plus one, because we discount the first row as the first row has no returns,
                 # there should be no stocks returned
                 assert ranked_stocks == []
             elif i == 2:
-                assert [str(s) for s in ranked_stocks] == ['B', 'C', 'A', 'D', 'E']
+                assert ranked_stocks == ['B', 'C', 'A', 'D', 'E']
             elif i == 3:
-                assert [str(s) for s in ranked_stocks] == ['B', 'C', 'E', 'A', 'D']
+                assert ranked_stocks == ['B', 'C', 'E', 'A', 'D']
             elif i == 4:
-                assert [str(s) for s in ranked_stocks] == ['C', 'E', 'A', 'B', 'D']
+                assert ranked_stocks == ['C', 'E', 'A', 'B', 'D']
             elif i == 5:
                 # Last row there are no adjusted close values, only returns, so no stocks should be returned
                 assert ranked_stocks == []
@@ -90,22 +89,20 @@ class JKStrategyTest(TestCase):
         """
         Testing the rank_stocks method of JKStrategy using a J parameter of 3, which should be the maximum J value
         where stocks are returned
-        :return:
         """
         J = 3
-        # K parameter is unused for this method, so can be any value
-        K = -1
-        s = JKStrategy(J=J, K=K)
+        s = JKStrategy(J=J)
 
         for i, row in self.df.iterrows():
             t = row['Date']
             ranked_stocks = s.rank_stocks(self.df, t, row, self.code_to_currency)
+            ranked_stocks = [str(s) for s in ranked_stocks]
             if i < J + 1:
                 # While i less than J plus one, because we discount the first row as the first row has no returns,
                 # there should be no stocks returned
                 assert ranked_stocks == []
             elif i == 4:
-                assert [str(s) for s in ranked_stocks] == ['C', 'B', 'E', 'A', 'D']
+                assert ranked_stocks == ['C', 'B', 'E', 'A', 'D']
             elif i == 5:
                 # Last row there are no adjusted close values, only returns, so no stocks should be returned
                 assert ranked_stocks == []
@@ -114,12 +111,9 @@ class JKStrategyTest(TestCase):
         """
         Testing the rank_stocks method of JKStrategy using a J parameter of 4, which is the number of months with
         returns data
-        :return:
         """
         J = 4
-        # K parameter is unused for this method, so can be any value
-        K = -1
-        s = JKStrategy(J=J, K=K)
+        s = JKStrategy(J=J)
 
         for i, row in self.df.iterrows():
             t = row['Date']
@@ -133,12 +127,9 @@ class JKStrategyTest(TestCase):
         """
         Testing the rank_stocks method of JKStrategy using a J parameter of 10, which is larger than the number of
         months, so no stocks should be returned
-        :return:
         """
         J = 10
-        # K parameter is unused for this method, so can be any value
-        K = -1
-        s = JKStrategy(J=J, K=K)
+        s = JKStrategy(J=J)
 
         for i, row in self.df.iterrows():
             t = row['Date']
@@ -148,12 +139,9 @@ class JKStrategyTest(TestCase):
     def test_rank_stocks_J_negative(self):
         """
         Testing the rank_stocks method of JKStrategy using a J parameter of -1
-        :return:
         """
         J = -1
-        # K parameter is unused for this method, so can be any value
-        K = -1
-        s = JKStrategy(J=J, K=K)
+        s = JKStrategy(J=J)
 
         for i, row in self.df.iterrows():
             t = row['Date']
@@ -162,7 +150,124 @@ class JKStrategyTest(TestCase):
 
 
 
-    """ TESTING """
+    """ TESTING 'create_stock()' METHOD """
+
+
+
+    def test_create_stock(self):
+        """
+        Testing the create_stock method of JKStrategy with normal data
+        """
+        stock = JKStrategy.create_stock("TEST", 0.01, 1.0)
+        assert stock.get_ticker_code() == 'TEST'
+        assert stock.get_J_returns() == 0.01
+        assert stock.get_price() == 1.0
+
+    def test_create_stock_incorrect_types(self):
+        """
+        Testing the create_stock method of JKStrategy with incorrect data types
+        :return:
+        """
+        s1 = JKStrategy.create_stock(10, "t", True)
+        s2 = JKStrategy.create_stock(True, 0, 0)
+        s3 = JKStrategy.create_stock("TEST", "None", 0)
+        s4 = JKStrategy.create_stock("TEST", 0, True)
+        lst = [s1, s2, s3, s4]
+
+        for s in lst:
+            assert not s
+
+    def test_create_stock_erroneous(self):
+        """
+        Testing the create_stock method of JKStrategy with missing data
+        """
+        s1 = JKStrategy.create_stock(None, None, None)
+        s2 = JKStrategy.create_stock("TEST", 0, None)
+        s3 = JKStrategy.create_stock("TEST", None, 0)
+        s4 = JKStrategy.create_stock(None, 0, 0)
+        s5 = JKStrategy.create_stock("TEST", 0, -1)
+        lst = [s1, s2, s3, s4, s5]
+
+        for s in lst:
+            assert not s
+
+
+
+    """ TESTING 'get_winners_and_losers()' METHOD """
+
+
+
+    def test_get_winners_and_losers_J_1(self):
+        J = 1
+        s = JKStrategy(J)
+
+        for i, row in self.df.iterrows():
+            t = row['Date']
+            ranked_stocks = s.rank_stocks(self.df, t, row, self.code_to_currency)
+            winners, losers = JKStrategy.get_winners_and_losers(ranked_stocks)
+            winners = [str(w) for w in winners]
+            losers = [str(l) for l in losers]
+
+            if i < J + 1:
+                # While i less than J plus one, because we discount the first row as the first row has no returns,
+                # there should be no stocks returned
+                assert not winners and not losers
+            elif i == 2:
+                # Ranked stocks = ['B', 'C', 'A', 'D', 'E']
+                assert winners == ['E'] and losers == ['B']
+            elif i == 3:
+                # Ranked stocks = ['B', 'C', 'E', 'A', 'D']
+                assert winners == ['D'] and losers == ['B']
+            elif i == 4:
+                # Ranked stocks = ['C', 'E', 'A', 'B', 'D']
+                assert winners == ['D'] and losers == ['C']
+            elif i == 5:
+                assert not winners and not losers
+
+    def test_get_winners_and_losers_J_2(self):
+        J = 2
+        s = JKStrategy(J)
+
+        for i, row in self.df.iterrows():
+            t = row['Date']
+            ranked_stocks = s.rank_stocks(self.df, t, row, self.code_to_currency)
+            winners, losers = JKStrategy.get_winners_and_losers(ranked_stocks)
+            winners = [str(w) for w in winners]
+            losers = [str(l) for l in losers]
+            if i < J + 1:
+                # While i less than J plus one, because we discount the first row as the first row has no returns,
+                # there should be no stocks returned
+                assert not winners and not losers
+            elif i == 3:
+                # Ranked stocks = ['B', 'C', 'A', 'E', 'D']
+                assert winners == ['D'] and losers == ['B']
+            elif i == 4:
+                # Ranked stocks = ['C', 'B', 'E', 'A', 'D']
+                assert winners == ['D'] and losers == ['C']
+            elif i == 5:
+                assert not winners and not losers
+
+
+    def test_winners_and_losers_J_10(self):
+        J = 10
+        s = JKStrategy(J=J)
+
+        for i, row in self.df.iterrows():
+            t = row['Date']
+            ranked_stocks = s.rank_stocks(self.df, t, row, self.code_to_currency)
+            winners, losers = JKStrategy.get_winners_and_losers(ranked_stocks)
+            assert not winners and not losers
+
+    def test_winners_and_losers_J_negative(self):
+        J = -1
+        s = JKStrategy(J=J)
+
+        for i, row in self.df.iterrows():
+            t = row['Date']
+            ranked_stocks = s.rank_stocks(self.df, t, row, self.code_to_currency)
+            winners, losers = JKStrategy.get_winners_and_losers(ranked_stocks)
+            assert not winners and not losers
+
 
 
 if __name__ == "__main__":

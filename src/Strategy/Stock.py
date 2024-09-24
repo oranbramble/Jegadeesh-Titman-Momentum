@@ -1,4 +1,13 @@
 class Stock:
+    """
+    Stock class which enables easy comparison of average stock returns over last J months for strategy
+    It is also used to hold stock price of when stock is longed/shorted
+
+    Parameters:
+        - ticker_code (str): Ticker code for the stock
+        - average_J_returns (float): Average returns over the last J months
+        - price (float): Current price of stock when objet is created
+    """
 
     def __init__(self, ticker_code: str, average_J_returns: float,  price: float):
         self.__ticker_code = ticker_code
