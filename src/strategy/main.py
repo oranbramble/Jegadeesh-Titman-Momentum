@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from typing import Collection
 
 from strategy_controller import StrategyController
-from grid import Grid
+from utils.grid import Grid
 
 
 def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=None):
@@ -15,7 +15,7 @@ def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=Non
     Method to run strategy, needed for multiprocessing
 
         Parameters:
-            strategy_obj: Strategy object to run
+            strategy_obj: strategy object to run
             df: DataFrame containing stock data
     :param code_to_currency: Dictionary mapping from ticker code to currency (not necessary)
     :return:
@@ -32,7 +32,7 @@ class Main:
         - data_filepath:
         - currency_filepath:
     """
-    def __init__(self, data_filepath="../Data/stock_data.csv", currency_filepath="../Data/code_to_currency.json"):
+    def __init__(self, data_filepath="../data/stock_data.csv", currency_filepath="../data/code_to_currency.json"):
 
         try:
             with open(currency_filepath, "r") as f:
@@ -63,7 +63,7 @@ class Main:
             -> Collection[Collection[float]]:
         """
         Plots lines for each run's cash tally by time on the same graph
-        :param strategy_controllers: Strategy Controllers used for runs
+        :param strategy_controllers: strategy Controllers used for runs
         :param axes: Axes to plot on
         :return: cash_tallies: list of lists, containing every cash tally from all runs
         """

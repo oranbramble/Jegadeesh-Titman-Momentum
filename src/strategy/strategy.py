@@ -1,10 +1,10 @@
 import pandas as pd
 import logging
 from datetime import datetime
-from typing import Tuple, Collection
+from typing import Tuple
 from pandas.tseries.offsets import DateOffset
 
-from Strategy.Stock import Stock
+from utils.stock import Stock
 
 
 class JKStrategy:

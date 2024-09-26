@@ -1,6 +1,5 @@
-import unittest
 from unittest import TestCase
-from src.Strategy.Stock import Stock
+from utils.stock import Stock
 
 class StockTest(TestCase):
 

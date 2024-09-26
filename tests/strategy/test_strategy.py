@@ -2,16 +2,16 @@ from unittest import TestCase
 import unittest
 import pandas as pd
 import json
-from src.Strategy.JKStrategy import JKStrategy
+from src.strategy.strategy import JKStrategy
 
 
-class JKStrategyTest(TestCase):
+class StrategyTest(TestCase):
 
     def setUp(self):
-        self.df = pd.read_csv("Data/dummy_data.csv")
+        self.df = pd.read_csv("data/dummy_data.csv")
         self.df['Date'] = pd.to_datetime(self.df['Date'], format="%d/%m/%Y")
 
-        with open("Data/code_to_currency_test.json", "r") as f:
+        with open("data/code_to_currency_test.json", "r") as f:
             self.code_to_currency = json.load(f)
 
 

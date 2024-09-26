@@ -1,8 +1,7 @@
 from typing import Collection
 from datetime import datetime
 
-from Strategy.Stock import Stock
-
+from utils.stock import Stock
 
 class Portfolio:
     """

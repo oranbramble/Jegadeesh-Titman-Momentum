@@ -82,8 +82,8 @@ def group_df(df, type):
 
 
 if __name__ == "__main__":
-    # Gets list of stock tickers from Codes.csv
-    ticker_list = pd.read_csv("../../data/Codes.csv")['Symbol'].astype(str).to_list()
+    # Gets list of stock tickers from codes.csv
+    ticker_list = pd.read_csv("../../data/codes.csv")['Symbol'].astype(str).to_list()
 
     # Downloads adjusted close data using yfinance
     adj_close_df, code_to_currency = get_data(ticker_list)

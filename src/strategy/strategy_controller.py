@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from typing import Collection
 
-from Strategy.JKStrategy import JKStrategy
-from Strategy.Investor import Investor
+from strategy import JKStrategy
+from investor import Investor
 
 
 class StrategyController:
@@ -37,7 +37,7 @@ class StrategyController:
         ranked_stocks = self.__strategy.rank_stocks(df, t, row, code_to_currency)
         if ranked_stocks:
             winners, losers = self.__strategy.get_winners_and_losers(ranked_stocks)
-            self.__investor.long_and_short(winners, losers, t)
+            self.__investor.create_position(winners, losers, t)
         if i > self.__J + self.__K:
             self.__investor.settle_position(t, row, self.__K)
 
