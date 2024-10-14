@@ -112,7 +112,7 @@ class Main:
         print(f"Average Final Cash {average_cash:.2f}")
 
 
-    def run_grid_parameters(self, iterations, cash=100000):
+    def run_grid_parameters(self, iterations, cash):
         """
         Run the strategy using random grid search on parameters
         :param iterations: Number of iterations
@@ -122,7 +122,7 @@ class Main:
         grid = Grid({
             "J": [x for x in range(1, 13)],
             "K": [x for x in range(1, 13)],
-            "ratio": [x / 100 for x in range(100)]
+            "ratio": [x / 100 for x in range(0,20,1)]
         })
 
         strategy_controllers = []
@@ -156,7 +156,7 @@ class Main:
 
 if __name__ == '__main__':
     m = Main()
-    m.run_grid_parameters(iterations=5, cash=1000)
+    m.run_grid_parameters(iterations=10, cash=1000)
 
 
 

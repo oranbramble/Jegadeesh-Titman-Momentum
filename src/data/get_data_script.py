@@ -8,7 +8,7 @@ def get_data(ticker_list):
     df = pd.DataFrame()
     for i,code in enumerate(ticker_list):
         ticker = yf.Ticker(code)
-        data = ticker.history(start='2010-1-1', end="2024-7-4")['Close']
+        data = ticker.history(start='2019-1-1', end="2024-10-1")['Close']
 
         currency = ticker.history_metadata.get("currency")
         code_to_currency[code] = currency
@@ -47,7 +47,7 @@ def clean_df(df):
 
 def get_monthly_adj_close_df(df):
     """
-    Gets a dataframe containing monthly dates and the first day of the months adjusted close value for each stock
+    Gets a dataframe containing monthly dates and the first day of the months adju sted close value for each stock
     :param df:
     :return:
     """

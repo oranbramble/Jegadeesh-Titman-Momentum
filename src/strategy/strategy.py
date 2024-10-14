@@ -109,7 +109,7 @@ class JKStrategy:
                 if price >= 0.0:
                     return Stock(ticker_code, average_J_returns, price)
                 else:
-                    logging.error("Price of stock less than 0")
+                    logging.error(f"Price of stock less than 0: {ticker_code} {price}")
             else:
                 logging.error("Incorrect type when creating Stock")
         else:

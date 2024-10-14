@@ -9,7 +9,7 @@ from investor import Investor
 
 class StrategyController:
 
-    def __init__(self, J: int, K: int, ratio: float, code_to_currency=None, cash=100000):
+    def __init__(self, J: int, K: int, ratio: float, cash,code_to_currency=None):
         self.__strategy = JKStrategy(J=J)
         self.__investor = Investor(starting_cash=cash, investment_ratio=ratio)
         self.__J = J
