@@ -38,10 +38,10 @@ class Investor:
         """
         # Check we have portfolios to create a position with
         if len(winners) + len(losers) > 0:
+            # Make list of stocks same length so that 'zip' works correctly later
             losers, winners = self.correct_portfolio_length(losers, winners)
             # Cash to invest per stock, assuming equally weighted portfolios
             cash_per_stock = (self.__cash * self.__investment_ratio) / (len(winners) + len(losers))
-         #   print(self.__cash, cash_per_stock, len(winners), len(losers))
             # Creates portfolios for long and short stocks
             portfolio_l = Portfolio(date, PortfolioType.LONG)
             portfolio_s = Portfolio(date, PortfolioType.SHORT)
@@ -54,7 +54,6 @@ class Investor:
             # Saves portfolios for when we settle the position in K months
             self.__portfolios_short[date] = portfolio_s
             self.__portfolios_long[date] = portfolio_l
-      #      print()
 
     def add_to_portfolio(self, stock: Stock, cash_per_stock: float, portfolio: Portfolio):
         """
@@ -95,15 +94,20 @@ class Investor:
             - portfolio_s (Portfolio): The shorted portfolio to settle
             - current_stocks (pd.Series): Series object containing current price of the stocks
         """
+        # Gets the long and short portfolio's stocks and makes the lists equal length so that 'zip' works correctly
         stocks_s, stocks_l = portfolio_s.get_stocks(), portfolio_l.get_stocks()
         stocks_s, stocks_l = self.correct_portfolio_length(stocks_s, stocks_l)
         for s, l in zip(stocks_s, stocks_l):
+            # Gets the price of the stocks in the current month
             current_price_s = current_stocks[str(s)]
             current_price_l = current_stocks[str(l)]
             prev_cash1 = deepcopy(self.__cash)
+            # Buys back shorted stock
+            # TODO: Implement transaction costs
             self.__cash -= current_price_s * s.get_amount()
             jump1 = ((self.__cash - prev_cash1) / prev_cash1)
             prev_cash2 = deepcopy(self.__cash)
+            # Sells longed stock
             self.__cash += current_price_l * l.get_amount()
             jump2 = ((self.__cash - prev_cash2) / prev_cash2)
 
@@ -128,10 +132,13 @@ class Investor:
             - current_stocks (pd.Series): Series containing the current price of the stocks
             - K (int): Look-back period, used to retrieve portfolios from K months ago to settle them
         """
+        # Date from K months ago
         K_date = current_date - DateOffset(months=K)
         try:
+            # Gets long and short portfolios from K months ago
             portfolio_longed = self.__portfolios_long[K_date]
             portfolio_shorted = self.__portfolios_short[K_date]
+            # Settles portfolios
             self.settle_long_and_short(portfolio_longed, portfolio_shorted, current_stocks)
         except KeyError:
             raise KeyError(f"No portfolio's found for date {K_date} with current date {current_date}")
@@ -150,16 +157,22 @@ class Investor:
         size_to_fill = end_index - len(self.__cash_tracker)
         self.__cash_tracker += [self.__cash for x in range(size_to_fill)]
 
-    def update_trackers(self):
+    def update_trackers(self, current_stocks: pd.Series):
         if isinstance(self.__cash, float) or isinstance(self.__cash, int):
             self.__cash_tracker.append(self.__cash)
         else:
             raise TypeError("Unexpected type in cash")
 
+        portfolios_position = 0
+        for portfolio in self.__portfolios_long.values():
+            portfolios_position += portfolio.get_value(current_stocks)
+        for portfolio in self.__portfolios_short.values():
+            portfolios_position -= portfolio.get_value(current_stocks)
+        self.__position_tracker.append(portfolios_position)
+
 
 
     """ GETTERS """
-
 
 
 
@@ -169,8 +182,11 @@ class Investor:
     def get_cash(self) -> float:
         return self.__cash
 
-    def get_plotting_data(self) -> Tuple[float, Collection[pd.Timestamp]]:
+    def get_cash_data(self) -> Tuple[float, Collection[pd.Timestamp]]:
         return self.__cash, self.__cash_tracker
+
+    def get_position_tally(self) -> Collection[float]:
+        return self.__position_tracker
 
     def get_investment_ratio(self) -> float:
         return self.__investment_ratio
@@ -183,13 +199,16 @@ class Investor:
 
 
 
-    """ HELPERS """
+    """ STATIC HELPERS """
 
 
-
-    def correct_portfolio_length(self, p1: Collection[Stock], p2: Collection[Stock]) -> Collection[Stock]:
+    @staticmethod
+    def correct_portfolio_length( p1: Collection[Stock], p2: Collection[Stock]) -> Collection[Stock]:
         if len(p1) < len(p2):
             p1 = p1 + [None for x in range(len(p2) - len(p1))]
         elif len(p1) > len(p2):
             p2 = p2 + [None for x in range(len(p1) - len(p2))]
         return p1, p2
+
+
+

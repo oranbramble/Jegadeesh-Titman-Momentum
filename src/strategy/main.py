@@ -8,6 +8,7 @@ from typing import Collection
 
 from strategy_controller import StrategyController
 from utils.grid import Grid
+from utils.exceptions import InvalidTallyType
 
 
 def run(strategy_obj: StrategyController, df: pd.DataFrame, code_to_currency=None):
@@ -47,52 +48,86 @@ class Main:
         except FileNotFoundError:
             raise FileNotFoundError("No historical data file found")
 
-    def plot_result(self, strategy_controllers: Collection[StrategyController]):
+    def plot_cash_graphs(self, strategy_controllers: Collection[StrategyController]):
         """
-        Plots the results on matplotlib graphs
+        Plots the cash tallies on matplotlib graphs.
+        Shows how the cash level changes using strategy over historical data.
         :param strategy_controllers: List of all strategy controllers from all runs
         """
 
         # Split into two graphs
         fig, axes = plt.subplots(nrows=1, ncols=2)
-        cash_tallies = self.plot_per_run_graph(strategy_controllers, axes[0])
-        self.plot_average_graph(cash_tallies, axes[1])
+        cash_tallies = self.plot_per_run_graph(strategy_controllers, axes[0], 'cash')
+        self.plot_average_graph(cash_tallies, axes[1], 'cash')
         plt.show()
 
-    def plot_per_run_graph(self, strategy_controllers: Collection[StrategyController], axes: plt.axes) \
-            -> Collection[Collection[float]]:
+    def plot_position_graphs(self, strategy_controllers: Collection[StrategyController]):
         """
-        Plots lines for each run's cash tally by time on the same graph
-        :param strategy_controllers: strategy Controllers used for runs
-        :param axes: Axes to plot on
-        :return: cash_tallies: list of lists, containing every cash tally from all runs
+        Plots the position tallies on matplotlib graphs.
+        Shows how the position value changes using strategy over historical data.
+        :param strategy_controllers: List of all strategy controllers from all runs
         """
-        # Saves all the cash tallies so they can be averaged
-        cash_tallies = []
+        # Split into two graphs
+        fig, axes = plt.subplots(nrows=1, ncols=2)
+        position_tallies = self.plot_per_run_graph(strategy_controllers, axes[0], 'position')
+        self.plot_average_graph(position_tallies, axes[1], 'position')
+        plt.show()
+
+    def plot_per_run_graph(self, strategy_controllers: Collection[StrategyController], axes: plt.axes,
+                           tally_type: str) -> Collection[Collection[float]]:
+        """
+        Plots lines for each run's cash or position value tally by time on the same graph
+
+        Parameters:
+            - strategy_controllers (Collection[StrategyController]): strategy Controllers used for runs
+            - axes (plt.axes): Axes to plot on
+            - tally_type (str): Either 'cash' or 'position' depending on what you want
+
+        Returns:
+            - Collection[Collection[float]]: list of lists, containing every tally from all runs
+
+        Raises:
+            - InvalidTallyType: If tally_type is not 'cash' or 'position'
+        """
+
+        # Saves all the tallies so they can be averaged
+        tallies = []
         for s in strategy_controllers:
-            # Plots the cash tally and date tally for each run
-            s.plot(self.__dates, axes)
-            # Saves the cash tally for averaging
-            cash_tallies.append(s.get_cash_tally())
+            if tally_type == 'cash':
+                # Plots the cash tally and date tally for each run
+                s.plot_cash(self.__dates, axes)
+                # Saves the cash tally for averaging
+                tallies.append(s.get_cash_tally())
+            elif tally_type == 'position':
+                # Plots the position tally and date tally for each run
+                s.plot_position(self.__dates, axes)
+                # Saves the position tally for averaging
+                tallies.append(s.get_position_tally())
+            else:
+                raise InvalidTallyType(f"Tally type {tally_type} invalid. Must be 'cash' or 'position")
 
         axes.legend()
-        axes.set_title("Cash per run over time")
+        axes.set_title(f"{tally_type} per run over time")
         axes.set_xlabel("Date")
-        axes.set_ylabel("Cash")
+        axes.set_ylabel(f"{tally_type}")
 
-        return cash_tallies
+        return tallies
 
-    def plot_average_graph(self, cash_tallies: Collection[Collection[float]], axes: plt.axes):
+    def plot_average_graph(self, tallies: Collection[Collection[float]], axes: plt.axes, tally_type: str):
         """
         Plots average cash tally from all runs by time
-        :param cash_tallies: List of lists containing each run's cash tally
-        :param axes: Axes to plot graph on
+
+        Parameters:
+            - tallies (Collection[Collection[float]]): The tally (Collection[float]) for each run
+            - axes (plt.axes): Axes to plot graph on
+            - tally_type (str): The type of tally we are plotting ('cash' or 'position'). Only used for titles so
+                                no exception thrown if invalid.
         """
-        average_cash_tally = np.average(np.array(cash_tallies), axis=0)
-        axes.plot(self.__dates, average_cash_tally)
-        axes.set_title("Average cash over time")
+        average_tally = np.average(np.array(tallies), axis=0)
+        axes.plot(self.__dates, average_tally)
+        axes.set_title(f"Average over {tally_type} time")
         axes.set_xlabel("Date")
-        axes.set_ylabel("Cash")
+        axes.set_ylabel(f"{tally_type}")
 
     @staticmethod
     def output_results(strategy_controllers: Collection[StrategyController]):
@@ -108,8 +143,8 @@ class Main:
             average_cash += s.get_cash()
         average_cash /= len(strategy_controllers)
         bankrupt_percentage = (number_of_bankrupt / len(strategy_controllers)) * 100
-        print(f"Percentage of bankrupt runs: {bankrupt_percentage:.2f}%")
-        print(f"Average Final Cash {average_cash:.2f}")
+        print(f"Percentage of bankrupt runs: {bankrupt_percentage}%")
+        print(f"Average Final Cash {average_cash}")
 
 
     def run_grid_parameters(self, iterations, cash):
@@ -151,7 +186,8 @@ class Main:
         # Output statistical results to command line
         Main.output_results(strategy_controllers)
         # Plots cash over time and average cash from all runs
-        self.plot_result(strategy_controllers)
+        self.plot_cash_graphs(strategy_controllers)
+        self.plot_position_graphs(strategy_controllers)
 
 
 if __name__ == '__main__':

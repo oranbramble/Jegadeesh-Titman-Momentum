@@ -9,16 +9,22 @@ from investor import Investor
 
 class StrategyController:
 
-    def __init__(self, J: int, K: int, ratio: float, cash,code_to_currency=None):
+    def __init__(self, J: int, K: int, ratio: float, cash, code_to_currency=None):
         self.__strategy = JKStrategy(J=J)
         self.__investor = Investor(starting_cash=cash, investment_ratio=ratio)
         self.__J = J
         self.__K = K
         self.__bankrupt = False
 
-    def plot(self, date_tally: Collection[pd.Timestamp] , ax: plt.axes) -> plt.axes:
-        final_cash, cash_tally = self.__investor.get_plotting_data()
+    def plot_cash(self, date_tally: Collection[pd.Timestamp], ax: plt.axes) -> plt.axes:
+        cash_tally = self.__investor.get_cash_tally()
         ax.plot(date_tally, cash_tally, label=f"J: {self.__J}, K: {self.__K},"
+                                              f" ratio: {self.__investor.get_investment_ratio()}")
+        return ax
+
+    def plot_position(self, date_tally: Collection[pd.Timestamp], ax: plt.axes) -> plt.axes:
+        position_tally = self.__investor.get_position_tally()
+        ax.plot(date_tally, position_tally, label=f"J: {self.__J}, K: {self.__K},"
                                               f" ratio: {self.__investor.get_investment_ratio()}")
         return ax
 
@@ -47,7 +53,7 @@ class StrategyController:
             t = row['Date']
             if i >= self.__J:
                 self.run_month(df, i, t, row, code_to_currency)
-            self.__investor.update_cash_tracker()
+            self.__investor.update_trackers(row)
 
             if self.__investor.get_cash() < 0:
                 print("#####   BANKRUPT   #####")
@@ -64,6 +70,9 @@ class StrategyController:
 
     def get_cash_tally(self) -> Collection[float]:
         return self.__investor.get_cash_tally()
+
+    def get_position_tally(self) -> Collection[float]:
+        return self.__investor.get_position_tally()
 
     def get_cash(self) -> float:
         return self.__investor.get_cash()
